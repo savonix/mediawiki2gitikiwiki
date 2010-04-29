@@ -4,3 +4,6 @@
 @mydb[:pass] = 'password'
 @mydb[:prefix] = 'prefix_'
 @mydb[:gitpath] = '/path/to/repo'
+# if the imported wiki should go into a subdir
+@mydb[:subdir] = 'subdir/'
+@mydb[:extension] = '.mdwn'

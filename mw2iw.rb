@@ -20,8 +20,8 @@ FROM  #{@mydb[:prefix]}text
 WHERE #{@mydb[:prefix]}text.old_id = ?")
 
 myrepo = Grit::Repo.new(@mydb[:gitpath])
-extension = '.mdwn'
-subdir = 'hungryblogger/'
+extension = @mydb[:extension]
+subdir = @mydb[:subdir]
 
 File.open('page_index.mdwn') do |f|
   f.each_line do |page|
@@ -39,7 +39,6 @@ File.open('page_index.mdwn') do |f|
           if res2 = sthz.fetch_all
             res2.each do |zrow|
               begin
-                next if content =~ /^#REDIRECT/
                 content = zrow[0].gsub(/(^=+)/) {|s| '#' * s.size }.gsub('[[Category:','[[!tag ').gsub(/=+$/,'')
                 msg = Grit::Blob.create(myrepo, {:name => page_name, :data => '' })
                 puts "#{msg} #{file_path} #{page_name}" unless @debug.nil?
