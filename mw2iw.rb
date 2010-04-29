@@ -38,7 +38,8 @@ File.open('page_index.mdwn') do |f|
           if res2 = sthz.fetch_all
             res2.each do |zrow|
               begin
-                content = zrow[0].gsub(/(^=+|=+$)/) {|s| '#' * s.size }.gsub('[[Category:','[[!')
+                next if content =~ /^#REDIRECT/
+                content = zrow[0].gsub(/(^=+)/) {|s| '#' * s.size }.gsub('[[Category:','[[!tag ').gsub(/=+$/,'')
                 msg = Grit::Blob.create(myrepo, {:name => page_name, :data => '' })
                 puts "#{msg} #{file_path} #{page_name}" unless @debug.nil?
                 Dir.chdir(@mydb[:gitpath]) {
