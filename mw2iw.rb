@@ -3,14 +3,14 @@ require 'mydbsetup'
 dbh = DBI.connect(@mydb[:host], @mydb[:user], @mydb[:pass])
 
 
-sth = dbh.prepare("SELECT hungrywiki_revision.rev_id
-FROM  hungrywiki_revision, hungrywiki_page
-WHERE hungrywiki_revision.rev_page = hungrywiki_page.page_id
-AND hungrywiki_page.page_title = ?")
+sth = dbh.prepare("SELECT #{@mydb[:prefix]}revision.rev_id
+FROM  #{@mydb[:prefix]}revision, #{@mydb[:prefix]}page
+WHERE #{@mydb[:prefix]}revision.rev_page = #{@mydb[:prefix]}page.page_id
+AND #{@mydb[:prefix]}page.page_title = ?")
 
-sthz = dbh.prepare("SELECT hungrywiki_text.old_text
-FROM  hungrywiki_text
-WHERE hungrywiki_text.old_id = ?")
+sthz = dbh.prepare("SELECT #{@mydb[:prefix]}text.old_text
+FROM  #{@mydb[:prefix]}text
+WHERE #{@mydb[:prefix]}text.old_id = ?")
 
 File.open('page_index.mdwn') do |f|
   f.each_line do |page|
@@ -23,7 +23,7 @@ File.open('page_index.mdwn') do |f|
           if res2 = sthz.fetch_all
             res2.each do |row|
               begin
-                puts row[0]
+                puts row[0].gsub(/==([^=]+)==/,'## \1' << "\n")
               rescue NoMethodError
                 puts row.inspect
               end
