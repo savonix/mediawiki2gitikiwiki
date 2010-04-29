@@ -6,7 +6,7 @@ include Grit
 
 dbh = DBI.connect(@mydb[:host], @mydb[:user], @mydb[:pass])
 
-
+# REVISIONS
 sth = dbh.prepare("SELECT #{@mydb[:prefix]}revision.rev_id,
   #{@mydb[:prefix]}revision.rev_comment,
   #{@mydb[:prefix]}revision.rev_user_text,
@@ -15,6 +15,7 @@ FROM  #{@mydb[:prefix]}revision, #{@mydb[:prefix]}page
 WHERE #{@mydb[:prefix]}revision.rev_page = #{@mydb[:prefix]}page.page_id
 AND #{@mydb[:prefix]}page.page_title = ?")
 
+# TEXT
 sthz = dbh.prepare("SELECT #{@mydb[:prefix]}text.old_text
 FROM  #{@mydb[:prefix]}text
 WHERE #{@mydb[:prefix]}text.old_id = ?")
@@ -23,9 +24,14 @@ myrepo = Grit::Repo.new(@mydb[:gitpath])
 extension = @mydb[:extension]
 subdir = @mydb[:subdir]
 
-File.open('page_index.mdwn') do |f|
-  f.each_line do |page|
-    page.gsub!("\n",'')
+# PAGES
+sthp = dbh.prepare("SELECT #{@mydb[:prefix]}page.page_title
+FROM  #{@mydb[:prefix]}page")
+
+sthp.execute()
+if pages = sthp.fetch_all
+  pages.each do |prow|
+    page = prow[0]
     sth.execute(page)
     if results = sth.fetch_all
       results.each do |row|
