@@ -21,6 +21,7 @@ WHERE #{@mydb[:prefix]}text.old_id = ?")
 
 myrepo = Grit::Repo.new(@mydb[:gitpath])
 extension = '.mdwn'
+subdir = 'hungryblogger/'
 
 File.open('page_index.mdwn') do |f|
   f.each_line do |page|
@@ -30,7 +31,7 @@ File.open('page_index.mdwn') do |f|
       results.each do |row|
         begin
 
-          page_name = 'hungryblogger/' + page.downcase.gsub(/[^a-z0-9_]/,'') + extension
+          page_name = subdir + page.downcase.gsub(/[^a-z0-9_]/,'') + extension
           puts "#{row[0]} #{page_name}" unless @debug.nil?
           file_path = @mydb[:gitpath] + '/' + page_name
 
