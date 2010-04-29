@@ -1,5 +1,6 @@
 require 'dbi'
 require 'mydbsetup'
+require 'grit'
 dbh = DBI.connect(@mydb[:host], @mydb[:user], @mydb[:pass])
 
 

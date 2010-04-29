@@ -1,0 +1,5 @@
+@mydb = Hash.new
+@mydb[:host] = 'DBI:Mysql:mediawiki:localhost'
+@mydb[:user] = 'username'
+@mydb[:pass] = 'password'
+@mydb[:prefix] = 'prefix_'
