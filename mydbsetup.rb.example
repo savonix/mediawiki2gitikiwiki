@@ -3,3 +3,4 @@
 @mydb[:user] = 'username'
 @mydb[:pass] = 'password'
 @mydb[:prefix] = 'prefix_'
+@mydb[:gitpath] = '/path/to/repo'

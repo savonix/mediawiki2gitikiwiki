@@ -1,12 +1,16 @@
 require 'dbi'
 require 'mydbsetup'
+require 'fileutils'
 require 'grit'
 include Grit
 
 dbh = DBI.connect(@mydb[:host], @mydb[:user], @mydb[:pass])
 
 
-sth = dbh.prepare("SELECT #{@mydb[:prefix]}revision.rev_id
+sth = dbh.prepare("SELECT #{@mydb[:prefix]}revision.rev_id,
+  #{@mydb[:prefix]}revision.rev_comment,
+  #{@mydb[:prefix]}revision.rev_user_text,
+  #{@mydb[:prefix]}revision.rev_timestamp
 FROM  #{@mydb[:prefix]}revision, #{@mydb[:prefix]}page
 WHERE #{@mydb[:prefix]}revision.rev_page = #{@mydb[:prefix]}page.page_id
 AND #{@mydb[:prefix]}page.page_title = ?")
@@ -25,38 +29,36 @@ File.open('page_index.mdwn') do |f|
     if results = sth.fetch_all
       results.each do |row|
         begin
-          puts row[0]
-          #page_name = page.downcase.gsub('[','').gsub(']','').gsub(/[^a-z0-9:\/\.]/,'_')
-          page_name = page.downcase + extension
-          puts page_name
+
+          page_name = 'hungryblogger/' + page.downcase.gsub(/[^a-z0-9_]/,'') + extension
+          puts "#{row[0]} #{page_name}" unless @debug.nil?
           file_path = @mydb[:gitpath] + '/' + page_name
-          #file_name = page_name + extension
+
           sthz.execute(row[0])
           if res2 = sthz.fetch_all
-            res2.each do |row|
+            res2.each do |zrow|
               begin
-                content = row[0].gsub(/==([^=]+)==/,'## \1' << "\n")
-                puts Grit::Blob.create(myrepo, {:name => page_name, :data => '' })
-                puts file_path
-                puts page_name
+                content = zrow[0].gsub(/(^=+|=+$)/) {|s| '#' * s.size }.gsub('[[Category:','[[!')
+                msg = Grit::Blob.create(myrepo, {:name => page_name, :data => '' })
+                puts "#{msg} #{file_path} #{page_name}" unless @debug.nil?
                 Dir.chdir(@mydb[:gitpath]) {
                   File.open(file_path, "w") { |f| f << content }
-                  #Dir.chdir(@mydb[:gitpath]) {
                   myrepo.add(page_name)
-                  #}
-                  commit_message = 'converted'
-                  puts myrepo.commit_index(commit_message)
+                  commit_message = "#{row[1]} by #{row[2]} on #{row[3]}"
+                  msg = myrepo.commit_index(commit_message)
+                  puts msg unless @debug.nil?
                 }
-                break
               rescue NoMethodError
                 puts row.inspect
+              rescue Errno::ENOENT
+                FileUtils.mkdir_p File.dirname(file_path)
+                redo
               end
             end
           end
         rescue NoMethodError
           puts row.inspect
         end
-        break
       end
     end
   end
