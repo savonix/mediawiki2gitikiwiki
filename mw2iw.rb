@@ -27,27 +27,27 @@ File.open('page_index.mdwn') do |f|
         begin
           puts row[0]
           #page_name = page.downcase.gsub('[','').gsub(']','').gsub(/[^a-z0-9:\/\.]/,'_')
-          page_name = page.downcase
+          page_name = page.downcase + extension
           puts page_name
-          #file_name = @mydb[:gitpath] + '/' + page_name + extension
-          file_name = page_name + extension
+          file_path = @mydb[:gitpath] + '/' + page_name
+          #file_name = page_name + extension
           sthz.execute(row[0])
           if res2 = sthz.fetch_all
             res2.each do |row|
               begin
                 content = row[0].gsub(/==([^=]+)==/,'## \1' << "\n")
-                #File.open(file_name, "w") { |f| f << content }
-                #Dir.chdir(@mydb[:gitpath]) {
-                myrepo.add(file_name, content)
-                #}
-                commit_message = 'converted'
-                unless myrepo.commit_index(commit_message)
-                  break
-                end
-                #Grit::Blob.create(repository, {
-                #    :name => page_name + extension,
-                #    :data => ""
-                #})
+                puts Grit::Blob.create(myrepo, {:name => page_name, :data => '' })
+                puts file_path
+                puts page_name
+                Dir.chdir(@mydb[:gitpath]) {
+                  File.open(file_path, "w") { |f| f << content }
+                  #Dir.chdir(@mydb[:gitpath]) {
+                  myrepo.add(page_name)
+                  #}
+                  commit_message = 'converted'
+                  puts myrepo.commit_index(commit_message)
+                }
+                break
               rescue NoMethodError
                 puts row.inspect
               end
@@ -56,6 +56,7 @@ File.open('page_index.mdwn') do |f|
         rescue NoMethodError
           puts row.inspect
         end
+        break
       end
     end
   end
