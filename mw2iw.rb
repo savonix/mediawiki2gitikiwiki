@@ -4,18 +4,18 @@ require 'fileutils'
 require 'grit'
 include Grit
 
-@debug = true
+#@debug = true
 
 dbh = DBI.connect(@mydb[:host], @mydb[:user], @mydb[:pass])
 
 # REVISIONS
-sth = dbh.prepare("SELECT DISTINCT #{@mydb[:prefix]}revision.rev_id,
+sth = dbh.prepare("SELECT #{@mydb[:prefix]}revision.rev_text_id,
   #{@mydb[:prefix]}revision.rev_comment,
   #{@mydb[:prefix]}revision.rev_user_text,
   #{@mydb[:prefix]}revision.rev_timestamp
 FROM  #{@mydb[:prefix]}revision, #{@mydb[:prefix]}page
 WHERE #{@mydb[:prefix]}revision.rev_page = #{@mydb[:prefix]}page.page_id
-AND #{@mydb[:prefix]}page.page_title = ?")
+AND #{@mydb[:prefix]}page.page_title = ? ORDER BY rev_timestamp ASC")
 
 # TEXT
 sthz = dbh.prepare("SELECT #{@mydb[:prefix]}text.old_text
@@ -30,11 +30,9 @@ subdir = @mydb[:subdir]
 sthp = dbh.prepare("SELECT #{@mydb[:prefix]}page.page_title
 FROM  #{@mydb[:prefix]}page ORDER BY page_title")
 
-
 sthp.execute()
 sthp.fetch do |prow|
   page = prow[0]
-  puts page
   sth.execute(page)
   sth.fetch do |row|
 
