@@ -43,16 +43,18 @@ sthp.fetch do |prow|
     sthz.execute(row[0])
     if res2 = sthz.fetch_all
       res2.each do |zrow|
-        content = zrow[0].gsub(/(^=+)/) {|s| '#' * s.size }.gsub('[[Category:','[[!tag ').gsub(/=+$/,'')
-        msg = Grit::Blob.create(myrepo, {:name => page_name, :data => '' })
-        puts "#{msg} #{file_path} #{page_name}" unless @debug.nil?
-        Dir.chdir(@mydb[:gitpath]) {
-          File.open(file_path, "w") { |f| f << content }
-          myrepo.add(page_name)
-          commit_message = "#{row[1]} by #{row[2]} on #{row[3]}"
-          msg = myrepo.commit_index(commit_message)
-          puts msg unless @debug.nil?
-        }
+        unless zrow[0].include?('REDIRECT')
+          content = zrow[0].gsub(/(^=+)/) {|s| '#' * s.size }.gsub(/\[\[Category:[^\]]+\]\]/,'').gsub(/\[\[/,'[[/').gsub(/=+$/,'')
+          msg = Grit::Blob.create(myrepo, {:name => page_name, :data => '' })
+          puts "#{msg} #{file_path} #{page_name}" unless @debug.nil?
+          Dir.chdir(@mydb[:gitpath]) {
+            File.open(file_path, "w") { |f| f << content }
+            myrepo.add(page_name)
+            commit_message = "#{row[1]} by #{row[2]} on #{row[3]}"
+            msg = myrepo.commit_index(commit_message)
+            puts msg unless @debug.nil?
+          }
+        end
       end
     end
   end
