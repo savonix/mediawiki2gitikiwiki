@@ -1,13 +1,15 @@
 require 'dbi'
-require 'mydbsetup'
+require './mydbsetup'
 require 'fileutils'
 require 'grit'
 include Grit
 
+@debug = true
+
 dbh = DBI.connect(@mydb[:host], @mydb[:user], @mydb[:pass])
 
 # REVISIONS
-sth = dbh.prepare("SELECT #{@mydb[:prefix]}revision.rev_id,
+sth = dbh.prepare("SELECT DISTINCT #{@mydb[:prefix]}revision.rev_id,
   #{@mydb[:prefix]}revision.rev_comment,
   #{@mydb[:prefix]}revision.rev_user_text,
   #{@mydb[:prefix]}revision.rev_timestamp
@@ -26,46 +28,33 @@ subdir = @mydb[:subdir]
 
 # PAGES
 sthp = dbh.prepare("SELECT #{@mydb[:prefix]}page.page_title
-FROM  #{@mydb[:prefix]}page")
+FROM  #{@mydb[:prefix]}page ORDER BY page_title")
+
 
 sthp.execute()
-if pages = sthp.fetch_all
-  pages.each do |prow|
-    page = prow[0]
-    sth.execute(page)
-    if results = sth.fetch_all
-      results.each do |row|
-        begin
+sthp.fetch do |prow|
+  page = prow[0]
+  puts page
+  sth.execute(page)
+  sth.fetch do |row|
 
-          page_name = subdir + page.downcase.gsub(/[^a-z0-9_]/,'') + extension
-          puts "#{row[0]} #{page_name}" unless @debug.nil?
-          file_path = @mydb[:gitpath] + '/' + page_name
+    page_name = subdir + page.downcase.gsub(/[^a-z0-9_]/,'') + extension
+    puts "#{row[0]} #{page_name}" unless @debug.nil?
+    file_path = @mydb[:gitpath] + '/' + page_name
 
-          sthz.execute(row[0])
-          if res2 = sthz.fetch_all
-            res2.each do |zrow|
-              begin
-                content = zrow[0].gsub(/(^=+)/) {|s| '#' * s.size }.gsub('[[Category:','[[!tag ').gsub(/=+$/,'')
-                msg = Grit::Blob.create(myrepo, {:name => page_name, :data => '' })
-                puts "#{msg} #{file_path} #{page_name}" unless @debug.nil?
-                Dir.chdir(@mydb[:gitpath]) {
-                  File.open(file_path, "w") { |f| f << content }
-                  myrepo.add(page_name)
-                  commit_message = "#{row[1]} by #{row[2]} on #{row[3]}"
-                  msg = myrepo.commit_index(commit_message)
-                  puts msg unless @debug.nil?
-                }
-              rescue NoMethodError
-                puts row.inspect
-              rescue Errno::ENOENT
-                FileUtils.mkdir_p File.dirname(file_path)
-                redo
-              end
-            end
-          end
-        rescue NoMethodError
-          puts row.inspect
-        end
+    sthz.execute(row[0])
+    if res2 = sthz.fetch_all
+      res2.each do |zrow|
+        content = zrow[0].gsub(/(^=+)/) {|s| '#' * s.size }.gsub('[[Category:','[[!tag ').gsub(/=+$/,'')
+        msg = Grit::Blob.create(myrepo, {:name => page_name, :data => '' })
+        puts "#{msg} #{file_path} #{page_name}" unless @debug.nil?
+        Dir.chdir(@mydb[:gitpath]) {
+          File.open(file_path, "w") { |f| f << content }
+          myrepo.add(page_name)
+          commit_message = "#{row[1]} by #{row[2]} on #{row[3]}"
+          msg = myrepo.commit_index(commit_message)
+          puts msg unless @debug.nil?
+        }
       end
     end
   end
